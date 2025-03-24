@@ -12,6 +12,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.danbramos.todolist.model.Task
 
+/**
+ * Composable function that displays a dialog for editing an existing task.
+ *
+ * @param task The task to be edited.
+ * @param onDismiss Callback to be invoked when the dialog is dismissed.
+ * @param onUpdateTask Callback to be invoked when the task is updated. It receives the updated task as a parameter.
+ */
 @Composable
 fun EditTaskDialog(
     task: Task,

@@ -12,12 +12,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.danbramos.todolist.model.Task
 
+/**
+ * Composable function to display a dialog for adding a new task.
+ *
+ * @param onDismiss Callback invoked when the dialog is dismissed.
+ * @param onAddTask Callback invoked when a new task is confirmed and added.
+ */
 @Composable
 fun AddTaskDialog(onDismiss: () -> Unit, onAddTask: (Task) -> Unit) {
+    // State variables to hold the title and description of the new task.
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
 
+    // AlertDialog to display the task creation form.
     AlertDialog(
+        // Callback to handle dialog dismissal.
         onDismissRequest = onDismiss,
         title = { Text("Add New Task") },
         text = {
@@ -25,16 +34,20 @@ fun AddTaskDialog(onDismiss: () -> Unit, onAddTask: (Task) -> Unit) {
                 TextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Title") }
+                    label = { Text("Title") },
+                    placeholder = { Text("Enter task title") } // Placeholder text for title.
                 )
                 TextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text("Description") }
+                    label = { Text("Description") },
+                    placeholder = { Text("Enter task description (optional)") } // Placeholder text for description.
                 )
             }
         },
+        // Button to confirm and add the new task.
         confirmButton = {
+            //Add the task only if title is not empty
             Button(onClick = {
                 if (title.isNotEmpty()) {
                     onAddTask(Task(title = title, description = description))
@@ -43,6 +56,7 @@ fun AddTaskDialog(onDismiss: () -> Unit, onAddTask: (Task) -> Unit) {
                 Text("Add")
             }
         },
+        // Button to dismiss the dialog without adding a task.
         dismissButton = {
             Button(onClick = onDismiss) {
                 Text("Cancel")

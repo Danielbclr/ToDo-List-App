@@ -20,8 +20,17 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.danbramos.todolist.model.Task
-import com.danbramos.todolist.viewmodel.TaskViewModel
 
+/**
+ * Composable function to display an individual task item within a list.
+ *
+ * This function renders a single task as a card, showing its title, description, a delete button, and a completion checkbox.
+ *
+ * @param task The [Task] object representing the task to display. Contains the task's title, description, and completion status.
+ * @param onDelete Callback function invoked when the user clicks the delete button for this task. This should handle the removal of the task from the data source.
+ * @param onUpdate Callback function invoked when the user toggles the completion checkbox. It receives the updated [Task] object with the modified `completed` status. This should handle updating the task's completion status in the data source.
+ * @param isLoading A boolean flag indicating whether the task list is currently loading. When true, the task item will be visually dimmed and the delete button and checkbox will be disabled to prevent user interaction during loading.
+ */
 @Composable
 fun TaskItem(
     task: Task,
@@ -29,6 +38,7 @@ fun TaskItem(
     onUpdate: (Task) -> Unit,
     isLoading: Boolean
 ) {
+    // Card composable to wrap the task item
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -40,12 +50,14 @@ fun TaskItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
+                // Display the task title with bold font weight
                 Text(text = task.title, fontWeight = FontWeight.Bold)
+                // Display the task description
                 Text(text = task.description)
             }
-
+            // Delete button for the task
             IconButton(
-                onClick = onDelete,
+                onClick = onDelete, // Calls the onDelete callback
                 enabled = !isLoading
             ) {
                 Icon(Icons.Default.Delete, "Delete")
@@ -53,17 +65,22 @@ fun TaskItem(
 
             Checkbox(
                 checked = task.completed,
-                onCheckedChange = { newState ->
+                onCheckedChange = { newState -> // Calls the onUpdate callback with the new state
                     onUpdate(task.copy(completed = newState))
                 },
-                enabled = !isLoading
+                enabled = !isLoading // Checkbox is disabled while loading
             )
         }
     }
 }
 
+/**
+ * Composable function to display a message when there are no tasks.
+ * This is used when the list of tasks is empty.
+ */
 @Composable
 fun EmptyState() {
+    // Box composable to center the text within the available space
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
