@@ -1,5 +1,8 @@
 package com.danbramos.todolist.view
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,17 +12,30 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import com.danbramos.todolist.model.Priority
 import com.danbramos.todolist.model.Task
+import com.danbramos.todolist.ui.theme.highPriorityColorDark
+import com.danbramos.todolist.ui.theme.highPriorityColorLight
+import com.danbramos.todolist.ui.theme.lowPriorityColorDark
+import com.danbramos.todolist.ui.theme.lowPriorityColorLight
+import com.danbramos.todolist.ui.theme.medPriorityColorDark
+import com.danbramos.todolist.ui.theme.medPriorityColorLight
+import com.danbramos.todolist.ui.theme.topPriorityColorDark
+import com.danbramos.todolist.ui.theme.topPriorityColorLight
 
 /**
  * Composable function to display an individual task item within a list.
@@ -34,42 +50,69 @@ import com.danbramos.todolist.model.Task
 @Composable
 fun TaskItem(
     task: Task,
+    showDelete: Boolean,
+    isLoading: Boolean,
     onDelete: () -> Unit,
-    onUpdate: (Task) -> Unit,
-    isLoading: Boolean
+    onClick: () -> Unit,
+    onUpdate: () -> Unit
 ) {
-    // Card composable to wrap the task item
+    var backgroundColor = when (Priority.fromInt(task.priority)) {
+        Priority.LOW -> lowPriorityColorLight
+        Priority.MED -> medPriorityColorLight
+        Priority.HIGH -> highPriorityColorLight
+        Priority.TOP -> topPriorityColorLight
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
+    if(isSystemInDarkTheme()) {
+        backgroundColor = when (Priority.fromInt(task.priority)) {
+            Priority.LOW -> lowPriorityColorDark
+            Priority.MED -> medPriorityColorDark
+            Priority.HIGH -> highPriorityColorDark
+            Priority.TOP -> topPriorityColorDark
+            else -> MaterialTheme.colorScheme.surfaceVariant
+        }
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
-            .alpha(if (isLoading) 0.5f else 1f)
+            .padding(vertical = 4.dp)
+            .clickable(enabled = !isLoading, onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                // Display the task title with bold font weight
-                Text(text = task.title, fontWeight = FontWeight.Bold)
-                // Display the task description
-                Text(text = task.description)
-            }
-            // Delete button for the task
-            IconButton(
-                onClick = onDelete, // Calls the onDelete callback
-                enabled = !isLoading
+            Column(
+                modifier = Modifier.weight(1f)
             ) {
-                Icon(Icons.Default.Delete, "Delete")
+                Text(
+                    text = task.title,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        textDecoration = if (task.completed) TextDecoration.LineThrough else TextDecoration.None
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (task.description.isNotEmpty()) {
+                    Text(
+                        text = task.description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
-            Checkbox(
-                checked = task.completed,
-                onCheckedChange = { newState -> // Calls the onUpdate callback with the new state
-                    onUpdate(task.copy(completed = newState))
-                },
-                enabled = !isLoading // Checkbox is disabled while loading
-            )
+            if (showDelete) {
+                IconButton(
+                    onClick = onDelete,
+                    enabled = !isLoading
+                ) {
+                    Icon(Icons.Filled.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
+                }
+            }
         }
     }
 }

@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">ToDoList</string>
+    <string name="priority_low">Low Priority</string>
+    <string name="priority_medium">Medium Priority</string>
+    <string name="priority_high">High Priority</string>
+    <string name="priority_top">Top Priority</string>
 </resources>

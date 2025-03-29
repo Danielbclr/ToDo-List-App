@@ -1,3 +1,4 @@
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -6,21 +7,20 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.Icon
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.danbramos.todolist.model.Task
 import com.danbramos.todolist.view.EmptyState
 import com.danbramos.todolist.view.LoadingIndicator
 import com.danbramos.todolist.view.TaskItem
-import com.danbramos.todolist.viewmodel.TaskViewModel
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +28,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import com.danbramos.todolist.view.AddTaskDialog
+import com.danbramos.todolist.view.DetailTaskDialog
+import com.danbramos.todolist.view.EditTaskDialog
+import com.danbramos.todolist.viewmodel.TaskViewModel
 
 /**
  * `TaskListScreen` is the main screen of the application responsible for displaying a list of tasks.
@@ -49,10 +52,13 @@ import com.danbramos.todolist.view.AddTaskDialog
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskListScreen(viewModel: TaskViewModel = viewModel()) {
-    // State to control the visibility of the Add Task Dialog.
-    var showDialog by remember { mutableStateOf(false) }
+    var showAddDialog by remember { mutableStateOf(false) }
+    var editMode by remember { mutableStateOf(false) }
+    var selectedTask by remember { mutableStateOf<Task?>(null) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var showDetailDialog by remember { mutableStateOf(false) }
+    var sortOrder by remember { mutableStateOf(SortOrder.PRIORITY_DESC) }
 
-    // Sync tasks when the screen is first launched.
     LaunchedEffect(Unit) {
         viewModel.syncTasks()
     }
@@ -63,18 +69,8 @@ fun TaskListScreen(viewModel: TaskViewModel = viewModel()) {
                 // Show a loading indicator when tasks are loading.
                 CircularProgressIndicator()
             } else {
-                // Define the content description for accessibility.
-                val fabContentDescription = if (viewModel.isLoading.value) "Add button disabled" else "Add button"
-
-                // FloatingActionButton to add new tasks.
-                // Disabled when tasks are loading.
                 FloatingActionButton(
-                    onClick = {
-                        if (!viewModel.isLoading.value) {
-                            showDialog = true
-                        }
-                    },
-                    modifier = Modifier.semantics { contentDescription = fabContentDescription },
+                    onClick = { showAddDialog = true }
                 ) {
                     Icon(Icons.Default.Add, "Add")
                 }
@@ -82,9 +78,26 @@ fun TaskListScreen(viewModel: TaskViewModel = viewModel()) {
         },
         topBar = {
             TopAppBar(
-                //Title and Sync Button.
                 title = { Text("Todo List") },
                 actions = {
+                    SortButton(
+                        sortOrder = sortOrder,
+                        onSortOrderChange = { newSortOrder ->
+                            sortOrder = newSortOrder
+                            viewModel.sortTasks(newSortOrder)
+                            viewModel.syncTasks()
+                        }
+                    )
+                    // Edit Mode Toggle
+                    IconButton(
+                        onClick = { editMode = !editMode },
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (editMode) Icons.Filled.Done else Icons.Filled.Edit,
+                            contentDescription = if (editMode) "Exit Edit Mode" else "Edit Mode"
+                        )
+                    }
                     SyncButton(viewModel)
                 }
             )
@@ -96,26 +109,64 @@ fun TaskListScreen(viewModel: TaskViewModel = viewModel()) {
                 .fillMaxSize()
         ) {
             when {
-                // Show a loading indicator while tasks are being fetched.
                 viewModel.isLoading.value -> LoadingIndicator()
-                // Display an error message if there's an error.
                 viewModel.errorMessage.value.isNotEmpty() -> ErrorMessage(viewModel.errorMessage.value)
-                // Display an empty state message if there are no tasks.
                 viewModel.tasks.isEmpty() -> EmptyState()
-                // Otherwise, display the task list.
-                else -> TaskList(viewModel.tasks, viewModel)
+                else -> TaskList(
+                    tasks = viewModel.tasks,
+                    viewModel = viewModel,
+                    editMode = editMode,
+                    onTaskClick = { task ->
+                        if (editMode) {
+                            selectedTask = task
+                            showEditDialog = true
+                        }
+                    },
+                    selectedTask = selectedTask,
+                    showDetailDialog = showDetailDialog,
+                    onDetailTask = { task ->
+                        selectedTask = task
+                        showDetailDialog = true
+                    }
+                )
             }
         }
-        //Manage the Dialog
-        // Add Task Dialog
-        if (showDialog) {
+
+        if (showAddDialog) {
             AddTaskDialog(
-                onDismiss = { showDialog = false },
+                onDismiss = { showAddDialog = false },
                 onAddTask = { newTask ->
                     viewModel.addTask(newTask)
-                    showDialog = false
+                    showAddDialog = false
                 }
             )
+        }
+
+        selectedTask?.let { task ->
+            if (showEditDialog) {
+                EditTaskDialog(
+                    task = task,
+                    onDismiss = {
+                        showEditDialog = false
+                        selectedTask = null
+                    },
+                    onUpdateTask = { updatedTask ->
+                        viewModel.updateTask(updatedTask)
+                        showEditDialog = false
+                        selectedTask = null
+                    }
+                )
+            }
+
+            if (showDetailDialog) {
+                DetailTaskDialog(
+                    task = selectedTask!!,
+                    onDismiss = {
+                        showDetailDialog = false
+                        selectedTask = null
+                    }
+                )
+            }
         }
     }
 }
@@ -124,23 +175,57 @@ fun TaskListScreen(viewModel: TaskViewModel = viewModel()) {
  * Displays the list of tasks in a [LazyColumn].
  */
 @Composable
-private fun TaskList(tasks: List<Task>, viewModel: TaskViewModel) {
+private fun TaskList(
+    tasks: List<Task>,
+    viewModel: TaskViewModel,
+    editMode: Boolean,
+    onTaskClick: (Task) -> Unit,
+    selectedTask: Task?,
+    showDetailDialog: Boolean,
+    onDetailTask: (Task) -> Unit
+) {
+    //Manage the state outside of LazyColumn
+    var detailDialog by remember { mutableStateOf(false) }
+    var selectedTaskState by remember { mutableStateOf<Task?>(null) }
+
     LazyColumn(
-        modifier = Modifier.padding(horizontal = 16.dp),  // horizontal padding
-        contentPadding = PaddingValues(vertical = 8.dp)  // vertical padding between items
+        modifier = Modifier.padding(horizontal = 16.dp),
+        contentPadding = PaddingValues(vertical = 8.dp)
     ) {
         items(tasks) { task ->
             TaskItem(
                 task = task,
+                showDelete = editMode,
+                isLoading = viewModel.isLoading.value,
                 onDelete = { viewModel.deleteTask(task.id!!) },
-                onUpdate = { updatedTask ->
-                    viewModel.updateTask(updatedTask)
+                onClick = {
+                    if (editMode) {
+                        onTaskClick(task)
+                    } else {
+                        // Update the state to show the detail dialog
+                        selectedTaskState = task
+                        detailDialog = true
+                    }
                 },
-                isLoading = viewModel.isLoading.value
+                onUpdate = {
+                    selectedTaskState = task
+                    detailDialog = true
+                }
             )
         }
     }
+    // Use the state to conditionally show the dialog
+    if (detailDialog && selectedTaskState != null) {
+        DetailTaskDialog(
+            task = selectedTaskState!!,
+            onDismiss = {
+                detailDialog = false
+                selectedTaskState = null
+            }
+        )
+    }
 }
+
 
 /**
  * Button to manually trigger task synchronization.
@@ -174,3 +259,40 @@ fun ErrorMessage(message: String) {
     }
 }
 
+enum class SortOrder {
+    PRIORITY_DESC,
+    PRIORITY_ASC,
+    TITLE_ASC,
+    TITLE_DESC
+}
+@Composable
+private fun SortButton(
+    sortOrder: SortOrder,
+    onSortOrderChange: (SortOrder) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    IconButton(onClick = { expanded = true }) {
+        Icon(Icons.Filled.Sort, contentDescription = "Sort")
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            DropdownMenuItem(
+                text = { Text("Priority (High to Low)") },
+                onClick = { onSortOrderChange(SortOrder.PRIORITY_DESC); expanded = false }
+            )
+            DropdownMenuItem(
+                text = { Text("Priority (Low to High)") },
+                onClick = { onSortOrderChange(SortOrder.PRIORITY_ASC); expanded = false }
+            )
+            DropdownMenuItem(
+                text = { Text("Title (A to Z)") },
+                onClick = { onSortOrderChange(SortOrder.TITLE_ASC); expanded = false }
+            )
+            DropdownMenuItem(
+                text = { Text("Title (Z to A)") },
+                onClick = { onSortOrderChange(SortOrder.TITLE_DESC); expanded = false }
+            )
+        }
+    }
+}

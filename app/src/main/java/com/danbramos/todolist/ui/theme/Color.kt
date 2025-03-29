@@ -2,10 +2,12 @@ package com.danbramos.todolist.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+val lowPriorityColorLight = Color(0xE6EE9B00)
+val medPriorityColorLight = Color(0xE6CA6702)
+val highPriorityColorLight = Color(0xE6BB3E03)
+val topPriorityColorLight = Color(0xE6AE2012)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val lowPriorityColorDark = Color(0xFF6A9889)
+val medPriorityColorDark = Color(0xFF1C7B7E)
+val highPriorityColorDark = Color(0xFF01404D)
+val topPriorityColorDark = Color(0xFF001219)

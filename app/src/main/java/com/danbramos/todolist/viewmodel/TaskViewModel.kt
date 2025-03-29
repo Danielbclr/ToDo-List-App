@@ -1,7 +1,9 @@
 package com.danbramos.todolist.viewmodel
 
+import SortOrder
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.danbramos.todolist.model.Task
@@ -17,9 +19,12 @@ import kotlinx.coroutines.launch
 class TaskViewModel : ViewModel() {
     // Instance of TaskRepository to interact with data layer
     private val repository = TaskRepository()
-    val tasks = mutableStateListOf<Task>()
     val isLoading = mutableStateOf(false)
     val errorMessage = mutableStateOf("")
+    private val _tasks = mutableStateListOf<Task>()
+    private var _sortOrder = SortOrder.PRIORITY_DESC
+    val tasks: SnapshotStateList<Task>
+        get() = SnapshotStateList<Task>().also { it.addAll(sortTasks(_sortOrder)) }
 
     /**
      * Fetches all tasks from the repository and updates the [tasks] state.
@@ -32,8 +37,8 @@ class TaskViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val fetchedTasks = repository.getAllTasks()
-                tasks.clear()
-                tasks.addAll(fetchedTasks)
+                _tasks.clear()
+                _tasks.addAll(fetchedTasks)
                 errorMessage.value = ""
             } catch (e: Exception) {
                 errorMessage.value = "Sync failed: ${e.localizedMessage}"
@@ -105,6 +110,16 @@ class TaskViewModel : ViewModel() {
                 errorMessage.value = "Failed to delete task: ${e.localizedMessage}"
                 isLoading.value = false
             }
+        }
+    }
+
+    fun sortTasks(sortOrder: SortOrder): List<Task> {
+        _sortOrder = sortOrder
+        return when (sortOrder) {
+            SortOrder.PRIORITY_DESC -> _tasks.sortedByDescending { it.priority}
+            SortOrder.PRIORITY_ASC -> _tasks.sortedBy { it.priority }
+            SortOrder.TITLE_ASC -> _tasks.sortedBy { it.title }
+            SortOrder.TITLE_DESC -> _tasks.sortedByDescending { it.title }
         }
     }
 }
