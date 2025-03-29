@@ -1,4 +1,5 @@
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,28 +10,36 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.Icon
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.danbramos.todolist.model.Task
-import com.danbramos.todolist.view.EmptyState
-import com.danbramos.todolist.view.LoadingIndicator
-import com.danbramos.todolist.view.TaskItem
-import androidx.compose.material.icons.filled.Sync
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.danbramos.todolist.R
+import com.danbramos.todolist.model.Task
+import com.danbramos.todolist.ui.theme.*
 import com.danbramos.todolist.view.AddTaskDialog
 import com.danbramos.todolist.view.DetailTaskDialog
 import com.danbramos.todolist.view.EditTaskDialog
+import com.danbramos.todolist.view.EmptyState
+import com.danbramos.todolist.view.LoadingIndicator
+import com.danbramos.todolist.view.TaskItem
+import com.danbramos.todolist.viewmodel.SettingsViewModel
 import com.danbramos.todolist.viewmodel.TaskViewModel
+import com.danbramos.todolist.viewmodel.ThemeMode
 
 /**
  * `TaskListScreen` is the main screen of the application responsible for displaying a list of tasks.
@@ -51,13 +60,36 @@ import com.danbramos.todolist.viewmodel.TaskViewModel
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TaskListScreen(viewModel: TaskViewModel = viewModel()) {
-    var showAddDialog by remember { mutableStateOf(false) }
+fun TaskListScreen(
+    viewModel: TaskViewModel = viewModel(),
+    settingsViewModel: SettingsViewModel = viewModel(),
+    onSettingsClick: () -> Unit = {},
+    // Dialog visibility controlled by parent
+    showAddDialog: Boolean = false,
+    showEditDialog: Boolean = false,
+    showDetailDialog: Boolean = false,
+    // Dialog callbacks
+    onShowAddDialog: () -> Unit = {},
+    onShowEditDialog: () -> Unit = {},
+    onShowDetailDialog: () -> Unit = {},
+    onDismissAddDialog: () -> Unit = {},
+    onDismissEditDialog: () -> Unit = {},
+    onDismissDetailDialog: () -> Unit = {}
+) {
     var editMode by remember { mutableStateOf(false) }
     var selectedTask by remember { mutableStateOf<Task?>(null) }
-    var showEditDialog by remember { mutableStateOf(false) }
-    var showDetailDialog by remember { mutableStateOf(false) }
     var sortOrder by remember { mutableStateOf(SortOrder.PRIORITY_DESC) }
+    
+    // Get current theme mode
+    val themeMode by settingsViewModel.themeMode.collectAsState()
+    val isDarkTheme = when (themeMode) {
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+    }
+    
+    // Get theme colors
+    val backgroundColor = if (isDarkTheme) DarkModeBg else LightModeBg
 
     LaunchedEffect(Unit) {
         viewModel.syncTasks()
@@ -70,15 +102,17 @@ fun TaskListScreen(viewModel: TaskViewModel = viewModel()) {
                 CircularProgressIndicator()
             } else {
                 FloatingActionButton(
-                    onClick = { showAddDialog = true }
+                    onClick = onShowAddDialog,
+                    containerColor = if (isDarkTheme) fabBackgroundDark else fabBackgroundLight,
+                    contentColor = if (isDarkTheme) fabContentDark else fabContentLight
                 ) {
-                    Icon(Icons.Default.Add, "Add")
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add))
                 }
             }
         },
         topBar = {
             TopAppBar(
-                title = { Text("Todo List") },
+                title = { Text(stringResource(R.string.todo_list)) },
                 actions = {
                     SortButton(
                         sortOrder = sortOrder,
@@ -95,13 +129,27 @@ fun TaskListScreen(viewModel: TaskViewModel = viewModel()) {
                     ) {
                         Icon(
                             imageVector = if (editMode) Icons.Filled.Done else Icons.Filled.Edit,
-                            contentDescription = if (editMode) "Exit Edit Mode" else "Edit Mode"
+                            contentDescription = if (editMode) stringResource(R.string.exit_edit_mode) else stringResource(R.string.edit_mode)
+                        )
+                    }
+                    // Settings Button
+                    IconButton(
+                        onClick = onSettingsClick,
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Settings,
+                            contentDescription = stringResource(R.string.settings)
                         )
                     }
                     SyncButton(viewModel)
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = backgroundColor
+                )
             )
-        }
+        },
+        containerColor = backgroundColor
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -117,56 +165,53 @@ fun TaskListScreen(viewModel: TaskViewModel = viewModel()) {
                     viewModel = viewModel,
                     editMode = editMode,
                     onTaskClick = { task ->
+                        selectedTask = task
                         if (editMode) {
-                            selectedTask = task
-                            showEditDialog = true
+                            onShowEditDialog()
+                        } else {
+                            onShowDetailDialog()
                         }
                     },
-                    selectedTask = selectedTask,
-                    showDetailDialog = showDetailDialog,
-                    onDetailTask = { task ->
-                        selectedTask = task
-                        showDetailDialog = true
-                    }
+                    onDelete = { taskId -> viewModel.deleteTask(taskId) }
                 )
             }
         }
 
         if (showAddDialog) {
             AddTaskDialog(
-                onDismiss = { showAddDialog = false },
+                onDismiss = onDismissAddDialog,
                 onAddTask = { newTask ->
                     viewModel.addTask(newTask)
-                    showAddDialog = false
-                }
+                    onDismissAddDialog()
+                },
+                settingsViewModel = settingsViewModel
             )
         }
 
-        selectedTask?.let { task ->
-            if (showEditDialog) {
-                EditTaskDialog(
-                    task = task,
-                    onDismiss = {
-                        showEditDialog = false
-                        selectedTask = null
-                    },
-                    onUpdateTask = { updatedTask ->
-                        viewModel.updateTask(updatedTask)
-                        showEditDialog = false
-                        selectedTask = null
-                    }
-                )
-            }
+        if (showEditDialog && selectedTask != null) {
+            EditTaskDialog(
+                task = selectedTask!!,
+                onDismiss = {
+                    onDismissEditDialog()
+                    selectedTask = null
+                },
+                onUpdateTask = { updatedTask ->
+                    viewModel.updateTask(updatedTask)
+                    onDismissEditDialog()
+                    selectedTask = null
+                },
+                settingsViewModel = settingsViewModel
+            )
+        }
 
-            if (showDetailDialog) {
-                DetailTaskDialog(
-                    task = selectedTask!!,
-                    onDismiss = {
-                        showDetailDialog = false
-                        selectedTask = null
-                    }
-                )
-            }
+        if (showDetailDialog && selectedTask != null) {
+            DetailTaskDialog(
+                task = selectedTask!!,
+                onDismiss = {
+                    onDismissDetailDialog()
+                    selectedTask = null
+                }
+            )
         }
     }
 }
@@ -180,14 +225,11 @@ private fun TaskList(
     viewModel: TaskViewModel,
     editMode: Boolean,
     onTaskClick: (Task) -> Unit,
-    selectedTask: Task?,
-    showDetailDialog: Boolean,
-    onDetailTask: (Task) -> Unit
+    onDelete: (Long) -> Unit
 ) {
-    //Manage the state outside of LazyColumn
-    var detailDialog by remember { mutableStateOf(false) }
-    var selectedTaskState by remember { mutableStateOf<Task?>(null) }
-
+    // Get a reference to the SettingsViewModel
+    val settingsViewModel = viewModel<SettingsViewModel>()
+    
     LazyColumn(
         modifier = Modifier.padding(horizontal = 16.dp),
         contentPadding = PaddingValues(vertical = 8.dp)
@@ -197,35 +239,14 @@ private fun TaskList(
                 task = task,
                 showDelete = editMode,
                 isLoading = viewModel.isLoading.value,
-                onDelete = { viewModel.deleteTask(task.id!!) },
-                onClick = {
-                    if (editMode) {
-                        onTaskClick(task)
-                    } else {
-                        // Update the state to show the detail dialog
-                        selectedTaskState = task
-                        detailDialog = true
-                    }
-                },
-                onUpdate = {
-                    selectedTaskState = task
-                    detailDialog = true
-                }
+                onDelete = { task.id?.let { onDelete(it) } },
+                onClick = { onTaskClick(task) },
+                onUpdate = { onTaskClick(task) },
+                settingsViewModel = settingsViewModel
             )
         }
     }
-    // Use the state to conditionally show the dialog
-    if (detailDialog && selectedTaskState != null) {
-        DetailTaskDialog(
-            task = selectedTaskState!!,
-            onDismiss = {
-                detailDialog = false
-                selectedTaskState = null
-            }
-        )
-    }
 }
-
 
 /**
  * Button to manually trigger task synchronization.
@@ -240,11 +261,134 @@ private fun SyncButton(viewModel: TaskViewModel) {
     ) {
         Icon(
             imageVector = Icons.Filled.Sync,
-            contentDescription = "Sync",
+            contentDescription = stringResource(R.string.sync),
             //if loading change the opacity
             tint = if (viewModel.isLoading.value) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
             else MaterialTheme.colorScheme.onSurface
         )
+    }
+}
+
+/**
+ * Dropdown menu for selecting sort order.
+ */
+@Composable
+private fun SortButton(
+    sortOrder: SortOrder,
+    onSortOrderChange: (SortOrder) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    
+    // Get current theme mode
+    val settingsViewModel = viewModel<SettingsViewModel>()
+    val themeMode by settingsViewModel.themeMode.collectAsState()
+    val isDarkTheme = when (themeMode) {
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+    }
+    
+    // Theme colors
+    val backgroundColor = if (isDarkTheme) DarkModeSurface else LightModeSurface
+    val textColor = if (isDarkTheme) Color.White.copy(alpha = 0.87f) else Color.Black.copy(alpha = 0.87f)
+    val highlightColor = if (isDarkTheme) fabBackgroundDark else fabBackgroundLight
+    
+    Box {
+        IconButton(
+            onClick = { expanded = true }
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Sort,
+                contentDescription = stringResource(R.string.sort)
+            )
+        }
+        
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(backgroundColor)
+        ) {
+            DropdownMenuItem(
+                text = { 
+                    Text(
+                        stringResource(R.string.sort_priority_high_to_low),
+                        color = if (sortOrder == SortOrder.PRIORITY_DESC) highlightColor else textColor
+                    ) 
+                },
+                onClick = {
+                    onSortOrderChange(SortOrder.PRIORITY_DESC)
+                    expanded = false
+                },
+                colors = MenuDefaults.itemColors(
+                    textColor = textColor,
+                    leadingIconColor = textColor,
+                    trailingIconColor = textColor,
+                    disabledTextColor = textColor.copy(alpha = 0.38f),
+                    disabledLeadingIconColor = textColor.copy(alpha = 0.38f),
+                    disabledTrailingIconColor = textColor.copy(alpha = 0.38f)
+                )
+            )
+            DropdownMenuItem(
+                text = { 
+                    Text(
+                        stringResource(R.string.sort_priority_low_to_high),
+                        color = if (sortOrder == SortOrder.PRIORITY_ASC) highlightColor else textColor
+                    ) 
+                },
+                onClick = {
+                    onSortOrderChange(SortOrder.PRIORITY_ASC)
+                    expanded = false
+                },
+                colors = MenuDefaults.itemColors(
+                    textColor = textColor,
+                    leadingIconColor = textColor,
+                    trailingIconColor = textColor,
+                    disabledTextColor = textColor.copy(alpha = 0.38f),
+                    disabledLeadingIconColor = textColor.copy(alpha = 0.38f),
+                    disabledTrailingIconColor = textColor.copy(alpha = 0.38f)
+                )
+            )
+            DropdownMenuItem(
+                text = { 
+                    Text(
+                        stringResource(R.string.sort_title_a_to_z),
+                        color = if (sortOrder == SortOrder.TITLE_ASC) highlightColor else textColor
+                    ) 
+                },
+                onClick = {
+                    onSortOrderChange(SortOrder.TITLE_ASC)
+                    expanded = false
+                },
+                colors = MenuDefaults.itemColors(
+                    textColor = textColor,
+                    leadingIconColor = textColor,
+                    trailingIconColor = textColor,
+                    disabledTextColor = textColor.copy(alpha = 0.38f),
+                    disabledLeadingIconColor = textColor.copy(alpha = 0.38f),
+                    disabledTrailingIconColor = textColor.copy(alpha = 0.38f)
+                )
+            )
+            DropdownMenuItem(
+                text = { 
+                    Text(
+                        stringResource(R.string.sort_title_z_to_a),
+                        color = if (sortOrder == SortOrder.TITLE_DESC) highlightColor else textColor
+                    ) 
+                },
+                onClick = {
+                    onSortOrderChange(SortOrder.TITLE_DESC)
+                    expanded = false
+                },
+                colors = MenuDefaults.itemColors(
+                    textColor = textColor,
+                    leadingIconColor = textColor,
+                    trailingIconColor = textColor,
+                    disabledTextColor = textColor.copy(alpha = 0.38f),
+                    disabledLeadingIconColor = textColor.copy(alpha = 0.38f),
+                    disabledTrailingIconColor = textColor.copy(alpha = 0.38f)
+                )
+            )
+        }
     }
 }
 
@@ -255,44 +399,24 @@ fun ErrorMessage(message: String) {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Text(text = "Error: $message")
+        Text(
+            text = message,
+            color = MaterialTheme.colorScheme.error
+        )
     }
 }
 
-enum class SortOrder {
-    PRIORITY_DESC,
-    PRIORITY_ASC,
-    TITLE_ASC,
-    TITLE_DESC
-}
+/**
+ * Composable function to display a message when there are no tasks.
+ * This is used when the list of tasks is empty.
+ */
 @Composable
-private fun SortButton(
-    sortOrder: SortOrder,
-    onSortOrderChange: (SortOrder) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    IconButton(onClick = { expanded = true }) {
-        Icon(Icons.Filled.Sort, contentDescription = "Sort")
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            DropdownMenuItem(
-                text = { Text("Priority (High to Low)") },
-                onClick = { onSortOrderChange(SortOrder.PRIORITY_DESC); expanded = false }
-            )
-            DropdownMenuItem(
-                text = { Text("Priority (Low to High)") },
-                onClick = { onSortOrderChange(SortOrder.PRIORITY_ASC); expanded = false }
-            )
-            DropdownMenuItem(
-                text = { Text("Title (A to Z)") },
-                onClick = { onSortOrderChange(SortOrder.TITLE_ASC); expanded = false }
-            )
-            DropdownMenuItem(
-                text = { Text("Title (Z to A)") },
-                onClick = { onSortOrderChange(SortOrder.TITLE_DESC); expanded = false }
-            )
-        }
+fun EmptyState() {
+    // Box composable to center the text within the available space
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text = stringResource(R.string.no_tasks_yet))
     }
 }

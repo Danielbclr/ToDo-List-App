@@ -16,16 +16,22 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.danbramos.todolist.R
 import com.danbramos.todolist.model.Priority
 import com.danbramos.todolist.model.Task
 import com.danbramos.todolist.ui.theme.highPriorityColorDark
@@ -36,6 +42,8 @@ import com.danbramos.todolist.ui.theme.medPriorityColorDark
 import com.danbramos.todolist.ui.theme.medPriorityColorLight
 import com.danbramos.todolist.ui.theme.topPriorityColorDark
 import com.danbramos.todolist.ui.theme.topPriorityColorLight
+import com.danbramos.todolist.viewmodel.SettingsViewModel
+import com.danbramos.todolist.viewmodel.ThemeMode
 
 /**
  * Composable function to display an individual task item within a list.
@@ -54,23 +62,43 @@ fun TaskItem(
     isLoading: Boolean,
     onDelete: () -> Unit,
     onClick: () -> Unit,
-    onUpdate: () -> Unit
+    onUpdate: () -> Unit,
+    settingsViewModel: SettingsViewModel = viewModel()
 ) {
-    var backgroundColor = when (Priority.fromInt(task.priority)) {
-        Priority.LOW -> lowPriorityColorLight
-        Priority.MED -> medPriorityColorLight
-        Priority.HIGH -> highPriorityColorLight
-        Priority.TOP -> topPriorityColorLight
-        else -> MaterialTheme.colorScheme.surfaceVariant
+    // Get the current theme mode from settings
+    val themeMode by settingsViewModel.themeMode.collectAsState()
+    
+    // Determine if dark theme should be used based on settings
+    val useDarkTheme = when (themeMode) {
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
     }
-    if(isSystemInDarkTheme()) {
-        backgroundColor = when (Priority.fromInt(task.priority)) {
+    
+    // Select background color based on priority and theme
+    val backgroundColor = if (useDarkTheme) {
+        when (Priority.fromInt(task.priority)) {
             Priority.LOW -> lowPriorityColorDark
             Priority.MED -> medPriorityColorDark
             Priority.HIGH -> highPriorityColorDark
             Priority.TOP -> topPriorityColorDark
             else -> MaterialTheme.colorScheme.surfaceVariant
         }
+    } else {
+        when (Priority.fromInt(task.priority)) {
+            Priority.LOW -> lowPriorityColorLight
+            Priority.MED -> medPriorityColorLight
+            Priority.HIGH -> highPriorityColorLight
+            Priority.TOP -> topPriorityColorLight
+            else -> MaterialTheme.colorScheme.surfaceVariant
+        }
+    }
+
+    // Calculate text color for better contrast with background
+    val textColor = if (backgroundColor.luminance() > 0.5) {
+        Color.Black.copy(alpha = 0.87f)  // Dark text for light backgrounds
+    } else {
+        Color.White  // Light text for dark backgrounds
     }
 
     Card(
@@ -94,13 +122,13 @@ fun TaskItem(
                     style = MaterialTheme.typography.titleMedium.copy(
                         textDecoration = if (task.completed) TextDecoration.LineThrough else TextDecoration.None
                     ),
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = textColor
                 )
                 if (task.description.isNotEmpty()) {
                     Text(
                         text = task.description,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = textColor.copy(alpha = 0.7f)
                     )
                 }
             }
@@ -110,7 +138,7 @@ fun TaskItem(
                     onClick = onDelete,
                     enabled = !isLoading
                 ) {
-                    Icon(Icons.Filled.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
+                    Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.delete), tint = MaterialTheme.colorScheme.error)
                 }
             }
         }
@@ -128,6 +156,6 @@ fun EmptyState() {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Text(text = "No tasks yet!")
+        Text(text = stringResource(R.string.no_tasks_yet))
     }
 }

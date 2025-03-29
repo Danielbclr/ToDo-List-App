@@ -1,0 +1,68 @@
+<resources>
+    <!-- App name -->
+    <string name="app_name">Lista de Tarefas</string>
+    
+    <!-- Task Priorities -->
+    <string name="priority_low">Prioridade Baixa</string>
+    <string name="priority_medium">Prioridade Média</string>
+    <string name="priority_high">Prioridade Alta</string>
+    <string name="priority_top">Prioridade Máxima</string>
+    
+    <!-- Task List Screen -->
+    <string name="todo_list">Lista de Tarefas</string>
+    <string name="add">Adicionar</string>
+    <string name="edit_mode">Modo de Edição</string>
+    <string name="exit_edit_mode">Sair do Modo de Edição</string>
+    <string name="settings">Configurações</string>
+    <string name="sync">Sincronizar</string>
+    <string name="no_tasks_yet">Nenhuma tarefa ainda!</string>
+    <string name="delete">Excluir</string>
+    
+    <!-- Sort Options -->
+    <string name="sort">Ordenar</string>
+    <string name="title_asc">Título (A-Z)</string>
+    <string name="title_desc">Título (Z-A)</string>
+    <string name="priority_asc">Prioridade (Baixa-Alta)</string>
+    <string name="priority_desc">Prioridade (Alta-Baixa)</string>
+    <string name="sort_priority_high_to_low">Prioridade (Alta para Baixa)</string>
+    <string name="sort_priority_low_to_high">Prioridade (Baixa para Alta)</string>
+    <string name="sort_title_a_to_z">Título (A-Z)</string>
+    <string name="sort_title_z_to_a">Título (Z-A)</string>
+    
+    <!-- Add Task Dialog -->
+    <string name="add_new_task">Adicionar Nova Tarefa</string>
+    <string name="title">Título</string>
+    <string name="description">Descrição</string>
+    <string name="priority">Prioridade</string>
+    <string name="add_task">Adicionar</string>
+    <string name="cancel">Cancelar</string>
+    
+    <!-- Edit Task Dialog -->
+    <string name="edit_task">Editar Tarefa</string>
+    <string name="completed">Concluída</string>
+    <string name="update">Atualizar</string>
+    
+    <!-- Detail Task Dialog -->
+    <string name="task_details">Detalhes da Tarefa</string>
+    <string name="status">Status</string>
+    <string name="status_completed">Concluída</string>
+    <string name="status_active">Ativa</string>
+    <string name="close">Fechar</string>
+    
+    <!-- Settings Screen -->
+    <string name="theme">Tema</string>
+    <string name="light_theme">Tema Claro</string>
+    <string name="dark_theme">Tema Escuro</string>
+    <string name="system_default">Padrão do Sistema</string>
+    <string name="back">Voltar</string>
+    
+    <!-- Language Settings -->
+    <string name="language">Idioma</string>
+    <string name="language_english">Inglês</string>
+    <string name="language_portuguese">Português</string>
+    <string name="system_language">Idioma do Sistema</string>
+    
+    <!-- Common -->
+    <string name="error_loading_tasks">Erro ao carregar tarefas</string>
+    <string name="press_back_to_exit">Pressione voltar novamente para sair</string>
+</resources> 
