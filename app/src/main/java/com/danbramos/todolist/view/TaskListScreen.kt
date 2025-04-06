@@ -1,11 +1,17 @@
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Done
@@ -13,8 +19,21 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.*
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -79,6 +98,7 @@ fun TaskListScreen(
     var editMode by remember { mutableStateOf(false) }
     var selectedTask by remember { mutableStateOf<Task?>(null) }
     var sortOrder by remember { mutableStateOf(SortOrder.PRIORITY_DESC) }
+    var filterMode by remember { mutableStateOf(TaskFilterMode.ALL) }
     
     // Get current theme mode
     val themeMode by settingsViewModel.themeMode.collectAsState()
@@ -90,6 +110,7 @@ fun TaskListScreen(
     
     // Get theme colors
     val backgroundColor = if (isDarkTheme) DarkModeBg else LightModeBg
+    val accentColor = if (isDarkTheme) fabBackgroundDark else fabBackgroundLight
 
     LaunchedEffect(Unit) {
         viewModel.syncTasks()
@@ -160,20 +181,58 @@ fun TaskListScreen(
                 viewModel.isLoading.value -> LoadingIndicator()
                 viewModel.errorMessage.value.isNotEmpty() -> ErrorMessage(viewModel.errorMessage.value)
                 viewModel.tasks.isEmpty() -> EmptyState()
-                else -> TaskList(
-                    tasks = viewModel.tasks,
-                    viewModel = viewModel,
-                    editMode = editMode,
-                    onTaskClick = { task ->
-                        selectedTask = task
-                        if (editMode) {
-                            onShowEditDialog()
-                        } else {
-                            onShowDetailDialog()
+                else -> {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        // Filter buttons row
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            FilterButton(
+                                text = stringResource(R.string.all),
+                                selected = filterMode == TaskFilterMode.ALL,
+                                accentColor = accentColor,
+                                onClick = { filterMode = TaskFilterMode.ALL }
+                            )
+                            FilterButton(
+                                text = stringResource(R.string.active),
+                                selected = filterMode == TaskFilterMode.ACTIVE,
+                                accentColor = accentColor,
+                                onClick = { filterMode = TaskFilterMode.ACTIVE }
+                            )
+                            FilterButton(
+                                text = stringResource(R.string.filter_completed),
+                                selected = filterMode == TaskFilterMode.COMPLETED,
+                                accentColor = accentColor,
+                                onClick = { filterMode = TaskFilterMode.COMPLETED }
+                            )
                         }
-                    },
-                    onDelete = { taskId -> viewModel.deleteTask(taskId) }
-                )
+                        
+                        // Filter tasks based on selected filter mode
+                        val filteredTasks = when (filterMode) {
+                            TaskFilterMode.ALL -> viewModel.tasks
+                            TaskFilterMode.ACTIVE -> viewModel.tasks.filter { !it.completed }
+                            TaskFilterMode.COMPLETED -> viewModel.tasks.filter { it.completed }
+                        }
+                        
+                        TaskList(
+                            tasks = filteredTasks,
+                            viewModel = viewModel,
+                            editMode = editMode,
+                            onTaskClick = { task ->
+                                selectedTask = task
+                                if (editMode) {
+                                    onShowEditDialog()
+                                } else {
+                                    onShowDetailDialog()
+                                }
+                            },
+                            onDelete = { taskId -> viewModel.deleteTask(taskId) }
+                        )
+                    }
+                }
             }
         }
 
@@ -241,7 +300,7 @@ private fun TaskList(
                 isLoading = viewModel.isLoading.value,
                 onDelete = { task.id?.let { onDelete(it) } },
                 onClick = { onTaskClick(task) },
-                onUpdate = { onTaskClick(task) },
+                onUpdate = { updatedTask -> viewModel.updateTask(updatedTask) },
                 settingsViewModel = settingsViewModel
             )
         }
@@ -418,5 +477,38 @@ fun EmptyState() {
         contentAlignment = Alignment.Center
     ) {
         Text(text = stringResource(R.string.no_tasks_yet))
+    }
+}
+
+/**
+ * Enum defining the task filter modes.
+ */
+enum class TaskFilterMode {
+    ALL,
+    ACTIVE,
+    COMPLETED
+}
+
+/**
+ * Custom filter button used in the filter row.
+ */
+@Composable
+fun FilterButton(
+    text: String,
+    selected: Boolean,
+    accentColor: Color,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier.padding(horizontal = 4.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (selected) accentColor else Color.Transparent,
+            contentColor = if (selected) Color.White else accentColor
+        ),
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, accentColor)
+    ) {
+        Text(text = text)
     }
 }

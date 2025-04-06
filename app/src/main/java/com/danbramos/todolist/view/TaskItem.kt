@@ -9,11 +9,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
@@ -62,7 +64,7 @@ fun TaskItem(
     isLoading: Boolean,
     onDelete: () -> Unit,
     onClick: () -> Unit,
-    onUpdate: () -> Unit,
+    onUpdate: (Task) -> Unit,
     settingsViewModel: SettingsViewModel = viewModel()
 ) {
     // Get the current theme mode from settings
@@ -114,6 +116,27 @@ fun TaskItem(
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Add checkbox to toggle completion status
+            Checkbox(
+                checked = task.completed,
+                onCheckedChange = { isChecked ->
+                    // Create updated task with new completion status
+                    val updatedTask = task.copy(completed = isChecked)
+                    onUpdate(updatedTask)
+                },
+                enabled = !isLoading,
+                modifier = Modifier
+                    .padding(end = 8.dp)
+                    .size(20.dp),
+                colors = CheckboxDefaults.colors(
+                        checkedColor = textColor,
+                        uncheckedColor = textColor.copy(alpha = 0.6f),
+                        checkmarkColor = backgroundColor,
+                        disabledCheckedColor = textColor.copy(alpha = 0.4f),
+                        disabledUncheckedColor = textColor.copy(alpha = 0.3f),
+                    )
+            )
+            
             Column(
                 modifier = Modifier.weight(1f)
             ) {

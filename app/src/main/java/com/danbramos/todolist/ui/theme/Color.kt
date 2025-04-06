@@ -4,11 +4,11 @@ import androidx.compose.ui.graphics.Color
 
 // Light Theme Colors
 val LightModeBg = Color(0xFFFFF4D1) // Pale orange/off-white background
-val LightModeSurface = Color(0xFFFFEDB5) // Slightly more saturated version for surface
+val LightModeSurface = Color(0xFFE6DEC3) // Slightly more saturated version for surface
 
 // Dark Theme Colors
-val DarkModeBg = Color(0xFF0B091F) // Very dark blue background
-val DarkModeSurface = Color(0xFF181548) // Slightly lighter dark blue for surface
+val DarkModeBg = Color(0xFF121212) // Very dark blue background
+val DarkModeSurface = Color(0xFF1E1E1E) // Slightly lighter dark blue for surface
 
 // Light theme priority colors (yellow → orange → red gradient)
 val lowPriorityColorLight = Color(0xE6FFB400) // Yellow
@@ -17,17 +17,19 @@ val highPriorityColorLight = Color(0xE6D11C00) // Orange
 val topPriorityColorLight = Color(0xE6760000) // Dark orange-red
 
 // Dark theme priority colors (turquoise → blue gradient)
-val lowPriorityColorDark = Color(0xFF181548)  // Light turquoise
-val medPriorityColorDark = Color(0xFF482E6F)  // Medium blue
-val highPriorityColorDark = Color(0xFF813A7E) // Dark blue
-val topPriorityColorDark = Color(0xFFBE5381) // Very dark blue
+val lowPriorityColorDark = Color(0xE6FFB400)  // Light turquoise
+val medPriorityColorDark = Color(0xE6FF6700)  // Medium blue
+val highPriorityColorDark = Color(0xE6D11C00) // Dark blue
+val topPriorityColorDark = Color(0xE6760000) // Very dark blue
 
 // FAB Colors
-val fabBackgroundLight = Color(0xE6FF6700) // Orange
+val fabBackgroundLight = Color(0xE6D11C00) // Orange
 val fabContentLight = Color(0xFFFFF4D1)
+val radioButtonLight = Color(0xFF1E1E1E)
 
-val fabBackgroundDark = Color(0xFF5C5C99) // Medium blue
-val fabContentDark = Color.White
+val fabBackgroundDark = Color(0xE6FF6700) // Medium blue
+val fabContentDark = Color(0xFFFFF4D1)
+val radioButtonDark = Color(0xFFFFF4D1)
 
 // Priority Chip Colors
 val priorityChipSelectedLight = Color(0xFFE65100) // Dark orange for light theme

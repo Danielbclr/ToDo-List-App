@@ -18,6 +18,11 @@
     <string name="no_tasks_yet">Nenhuma tarefa ainda!</string>
     <string name="delete">Excluir</string>
     
+    <!-- Filter Options -->
+    <string name="all">Todas</string>
+    <string name="active">Ativas</string>
+    <string name="filter_completed">Concluídas</string>
+    
     <!-- Sort Options -->
     <string name="sort">Ordenar</string>
     <string name="title_asc">Título (A-Z)</string>

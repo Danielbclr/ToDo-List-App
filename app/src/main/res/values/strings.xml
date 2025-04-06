@@ -18,6 +18,11 @@
     <string name="no_tasks_yet">No tasks yet!</string>
     <string name="delete">Delete</string>
     
+    <!-- Filter Options -->
+    <string name="all">All</string>
+    <string name="active">Active</string>
+    <string name="filter_completed">Completed</string>
+    
     <!-- Sort Options -->
     <string name="sort">Sort</string>
     <string name="title_asc">Title (A-Z)</string>

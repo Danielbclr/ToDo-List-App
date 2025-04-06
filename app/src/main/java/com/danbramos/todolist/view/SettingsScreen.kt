@@ -49,7 +49,7 @@ fun SettingsScreen(
     val backgroundColor = if (isDarkTheme) DarkModeBg else LightModeBg
     val surfaceColor = if (isDarkTheme) DarkModeSurface else LightModeSurface
     val primaryColor = if (isDarkTheme) fabBackgroundDark else fabBackgroundLight
-    val radioButtonColor = if (isDarkTheme) lowPriorityColorDark else lowPriorityColorLight
+    val radioButtonColor = if (isDarkTheme) radioButtonDark else radioButtonLight
     
     // Handle system back button
     BackHandler {
